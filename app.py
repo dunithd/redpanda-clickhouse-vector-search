@@ -5,31 +5,31 @@ import os
 
 st.title("MeowMunch Reviews")
 
-# client = OpenAI()
+client = OpenAI()
 
-# def get_embedding(text, model="text-embedding-3-small"):
-#    text = text.replace("\n", " ")
-#    return client.embeddings.create(input = [text], model=model).data[0].embedding
+def get_embedding(text, model="text-embedding-3-small"):
+   text = text.replace("\n", " ")
+   return client.embeddings.create(input = [text], model=model).data[0].embedding
 
 
-# def find_similar(search_term):
-#     parameters = {
-#         'searchEmbedding': get_embedding(search_term)
-#     }
+def find_similar(search_embedding):
+    parameters = {
+        'searchEmbedding': search_embedding
+    }
 
-#     query = """
-#     FROM reviews2
-#     SELECT
-#     review, user,
-#     cosineDistance(
-#         embedding,
-#         {searchEmbedding:Array(Float(32))}
-#     ) AS score
-#     ORDER BY score
-#     LIMIT 5
-#     """
+    query = """
+    FROM reviews2
+    SELECT
+    review, user,
+    cosineDistance(
+        embedding,
+        {searchEmbedding:Array(Float(32))}
+    ) AS score
+    ORDER BY score
+    LIMIT 5
+    """
 
-#     return ch_client.query(query=query, parameters=parameters)
+    return ch_client.query_df(query=query, parameters=parameters)
 
 ch_client = clickhouse_connect.get_client(
     host=os.environ.get("CH_HOST"), 
@@ -38,14 +38,7 @@ ch_client = clickhouse_connect.get_client(
     secure=True
 )
 
-# result = ch_client.query('SELECT * FROM reviews2 LIMIT 1')
-
-# print(result.column_names)
-# print(result.result_rows)
-
-# result = find_similar("small portions")
-# for row in result.result_rows:
-#     print(row)
+st.header("Find similar reviews")
 
 result = ch_client.query("""
 SELECT review
@@ -57,15 +50,43 @@ selected_review = st.selectbox(
     [row[0] for row in result.result_rows]
 )
 
+with st.spinner('Wait for it...'):
+    result = ch_client.query_df("""
+    SELECT
+        review,
+        user,
+        cosineDistance(embedding, getEmbedding({selectedReview:String})) AS score
+    FROM reviews2
+    ORDER BY score ASC
+    LIMIT 10
+    """, parameters={"selectedReview": selected_review})
+    st.dataframe(result, hide_index=True)
 
-result = ch_client.query_df("""
-SELECT
-    review,
-    user,
-    cosineDistance(embedding, getEmbedding({selectedReview:String})) AS score
-FROM reviews2
-ORDER BY score ASC
-LIMIT 10
-""", parameters={"selectedReview": selected_review})
+    result = ch_client.query_df("""
+    WITH topArticles AS
+        (
+            SELECT tokens(review) AS textTokens
+            FROM reviews2
+            ORDER BY cosineDistance(embedding, getEmbedding({selectedReview:String}))
+            LIMIT 100
+        )
+    SELECT
+        arrayJoin(if(length(textTokens) < 3, [textTokens], arrayShingles(textTokens, 3))) AS shingle,
+        count()
+    FROM topArticles
+    WHERE numberOfStopWords(shingle) <= 1 AND not startsOrEndsWithStopWord(shingle)
+    GROUP BY ALL
+    ORDER BY count() DESC
+    LIMIT 10
+    """, parameters={"selectedReview": selected_review})
+    st.dataframe(result, hide_index=True)
 
-st.dataframe(result, hide_index=True)
+st.header("Search reviews")
+search_term = st.text_input('Search term')
+
+if search_term:    
+    with st.spinner('Wait for it...'):
+        search_embedding = get_embedding(search_term)
+
+        result = find_similar(search_embedding)
+        st.dataframe(result, hide_index=True)
