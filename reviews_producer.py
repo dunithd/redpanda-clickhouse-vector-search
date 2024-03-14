@@ -23,8 +23,8 @@ producer = KafkaProducer(
   bootstrap_servers="cnkan84tluj4mbfiavk0.any.eu-central-1.mpx.prd.cloud.redpanda.com:9092",
   security_protocol="SASL_SSL",
   sasl_mechanism="SCRAM-SHA-256",
-  sasl_plain_username="demouser",
-  sasl_plain_password="6gya4DCbb0venUvUEejVYqa1BjvxYL",
+  sasl_plain_username="",
+  sasl_plain_password="",
   value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
