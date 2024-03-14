@@ -9,3 +9,9 @@ Steps:
 * Store reviews + embeddings in CH
 * Do sentiment analysis + similarity search on reviews
 * $$$$
+
+Connect to ClickHouse Server
+
+```bash
+./clickhouse client --host ${CH_HOST} --secure --password ${CH_PASSWORD} -m
+```

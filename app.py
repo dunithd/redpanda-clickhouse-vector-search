@@ -41,7 +41,7 @@ ch_client = clickhouse_connect.get_client(
 st.header("Popular phrases")
 
 result = ch_client.query_df("""
-WITH topArticles AS
+WITH reviewTokens AS
     (
         SELECT tokens(review) AS textTokens
         FROM reviews2
@@ -49,7 +49,7 @@ WITH topArticles AS
 SELECT
     arrayJoin(if(length(textTokens) < 3, [textTokens], arrayShingles(textTokens, 3))) AS shingle,
     count()
-FROM topArticles
+FROM reviewTokens
 WHERE numberOfStopWords(shingle) <= 1 AND not startsOrEndsWithStopWord(shingle)
 GROUP BY ALL
 ORDER BY count() DESC
