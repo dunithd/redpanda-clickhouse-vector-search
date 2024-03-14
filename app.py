@@ -38,6 +38,26 @@ ch_client = clickhouse_connect.get_client(
     secure=True
 )
 
+st.header("Popular phrases")
+
+result = ch_client.query_df("""
+WITH topArticles AS
+    (
+        SELECT tokens(review) AS textTokens
+        FROM reviews2
+    )
+SELECT
+    arrayJoin(if(length(textTokens) < 3, [textTokens], arrayShingles(textTokens, 3))) AS shingle,
+    count()
+FROM topArticles
+WHERE numberOfStopWords(shingle) <= 1 AND not startsOrEndsWithStopWord(shingle)
+GROUP BY ALL
+ORDER BY count() DESC
+LIMIT 10
+""")
+st.dataframe(result, hide_index=True)
+
+
 st.header("Find similar reviews")
 
 result = ch_client.query("""
@@ -58,25 +78,6 @@ with st.spinner('Wait for it...'):
         cosineDistance(embedding, getEmbedding({selectedReview:String})) AS score
     FROM reviews2
     ORDER BY score ASC
-    LIMIT 10
-    """, parameters={"selectedReview": selected_review})
-    st.dataframe(result, hide_index=True)
-
-    result = ch_client.query_df("""
-    WITH topArticles AS
-        (
-            SELECT tokens(review) AS textTokens
-            FROM reviews2
-            ORDER BY cosineDistance(embedding, getEmbedding({selectedReview:String}))
-            LIMIT 100
-        )
-    SELECT
-        arrayJoin(if(length(textTokens) < 3, [textTokens], arrayShingles(textTokens, 3))) AS shingle,
-        count()
-    FROM topArticles
-    WHERE numberOfStopWords(shingle) <= 1 AND not startsOrEndsWithStopWord(shingle)
-    GROUP BY ALL
-    ORDER BY count() DESC
     LIMIT 10
     """, parameters={"selectedReview": selected_review})
     st.dataframe(result, hide_index=True)
