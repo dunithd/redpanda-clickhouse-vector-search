@@ -44,7 +44,7 @@ result = ch_client.query_df("""
 WITH reviewTokens AS
     (
         SELECT tokens(review) AS textTokens
-        FROM reviews2
+        FROM reviews
     )
 SELECT
     arrayJoin(if(length(textTokens) < 3, [textTokens], arrayShingles(textTokens, 3))) AS shingle,
@@ -62,7 +62,7 @@ st.header("Find similar reviews")
 
 result = ch_client.query("""
 SELECT review
-FROM reviews2
+FROM reviews
 """)
 
 selected_review = st.selectbox(
@@ -76,7 +76,7 @@ with st.spinner('Wait for it...'):
         review,
         user,
         cosineDistance(embedding, getEmbedding({selectedReview:String})) AS score
-    FROM reviews2
+    FROM reviews
     ORDER BY score ASC
     LIMIT 10
     """, parameters={"selectedReview": selected_review})
