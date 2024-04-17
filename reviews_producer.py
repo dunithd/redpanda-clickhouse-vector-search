@@ -36,7 +36,7 @@ producer = KafkaProducer(
   value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-topic = "reviews2"
+topic = "reviews"
 
 # Hydrate the topics with our fake reviews. It's ugly. But let's get on with it.
 for review in reviews:

@@ -1,0 +1,4 @@
+openai
+streamlit
+clickhouse-connect
+kafka-python
