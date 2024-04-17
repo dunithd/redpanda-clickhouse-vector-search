@@ -18,7 +18,7 @@ def find_similar(search_embedding):
     }
 
     query = """
-    FROM reviews2
+    FROM reviews
     SELECT
     review, user,
     cosineDistance(
