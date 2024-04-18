@@ -18,7 +18,7 @@ def find_similar(search_embedding):
     }
 
     query = """
-    FROM reviews2
+    FROM reviews
     SELECT
     review, user,
     cosineDistance(
@@ -44,7 +44,7 @@ result = ch_client.query_df("""
 WITH reviewTokens AS
     (
         SELECT tokens(review) AS textTokens
-        FROM reviews2
+        FROM reviews
     )
 SELECT
     arrayJoin(if(length(textTokens) < 3, [textTokens], arrayShingles(textTokens, 3))) AS shingle,
@@ -76,7 +76,7 @@ with st.spinner('Wait for it...'):
         review,
         user,
         cosineDistance(embedding, getEmbedding({selectedReview:String})) AS score
-    FROM reviews2
+    FROM reviews
     ORDER BY score ASC
     LIMIT 10
     """, parameters={"selectedReview": selected_review})
