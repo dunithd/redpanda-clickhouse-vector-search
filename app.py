@@ -62,7 +62,7 @@ st.header("Find similar reviews")
 
 result = ch_client.query("""
 SELECT review
-FROM reviews2
+FROM reviews
 """)
 
 selected_review = st.selectbox(
